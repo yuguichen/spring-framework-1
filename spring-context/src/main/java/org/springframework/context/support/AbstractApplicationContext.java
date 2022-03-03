@@ -556,8 +556,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 			catch (BeansException ex) {
 				if (logger.isWarnEnabled()) {
-					logger.warn("Exception encountered during context initialization - " +
-							"cancelling refresh attempt: " + ex);
+					logger.warn("Exception encountered during context initialization - cancelling refresh attempt: " + ex);
 				}
 
 				// Destroy already created singletons to avoid dangling resources.

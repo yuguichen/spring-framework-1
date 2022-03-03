@@ -86,6 +86,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 		this();
 		register(componentClasses);
+		// Spring容器核心方法
 		refresh();
 	}
 
@@ -149,8 +150,7 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 
 	/**
 	 * Register one or more component classes to be processed.
-	 * <p>Note that {@link #refresh()} must be called in order for the context
-	 * to fully process the new classes.
+	 * <p>Note that {@link #refresh()} must be called in order for the context to fully process the new classes.
 	 * @param componentClasses one or more component classes &mdash; for example,
 	 * {@link Configuration @Configuration} classes
 	 * @see #scan(String...)
