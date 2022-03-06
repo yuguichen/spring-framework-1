@@ -64,6 +64,8 @@ public interface SmartFactoryBean<T> extends FactoryBean<T> {
 	 * Does this FactoryBean expect eager initialization, that is,
 	 * eagerly initialize itself as well as expect eager initialization
 	 * of its singleton object (if any)?
+	 * 这个 FactoryBean 是否期望急切初始化，即急切地初始化自身以及期望其单例对象（如果有的话）的急切初始化？
+	 *
 	 * <p>A standard FactoryBean is not expected to initialize eagerly:
 	 * Its {@link #getObject()} will only be called for actual access, even
 	 * in case of a singleton object. Returning {@code true} from this
