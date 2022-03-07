@@ -546,8 +546,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
+			// 创建Bean对象，并且将对象包裹在BeanWrapper 中
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
+		// 再从Wrapper中把Bean原始对象（非代理~~~）  这个时候这个Bean就有地址值了(已完成实例化？)，就能被引用了~~~
+		// 注意：此处是原始对象，这点非常的重要
 		Object bean = instanceWrapper.getWrappedInstance();
 		Class<?> beanType = instanceWrapper.getWrappedClass();
 		if (beanType != NullBean.class) {
@@ -567,14 +570,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}
 		}
 
+		// 如果允许循环依赖的话，此处会添加一个ObjectFactory到三级缓存里面，以备创建对象并且提前暴露引用~
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
-		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
-				isSingletonCurrentlyInCreation(beanName));
+		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences && isSingletonCurrentlyInCreation(beanName));
 		if (earlySingletonExposure) {
 			if (logger.isTraceEnabled()) {
 				logger.trace("Eagerly caching bean '" + beanName + "' to allow for resolving potential circular references");
 			}
+			// addSingletonFactory 方法放进三级缓存一个ObjectFactory，并删除对应的二级缓存
+			// getEarlyBeanReference的作用：
+			// 		调用SmartInstantiationAwareBeanPostProcessor.getEarlyBeanReference()这个方法, 否则啥都不做
+			// 		也就是给调用者个机会，自己去实现暴露这个bean的应用的逻辑: 比如在getEarlyBeanReference()里可以实现AOP的逻辑:
+			// 			参考自动代理创建器AbstractAutoProxyCreator  实现了这个方法来创建代理对象 若不需要x执行AOP的逻辑，直接返回Bean
+			// 		保证自己被循环依赖的时候，即使被别的Bean @Autowire进去的也是代理对象~~~~  AOP自动代理创建器此方法里会创建的代理对象~~~
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -587,26 +596,40 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		catch (Throwable ex) {
 			if (ex instanceof BeanCreationException && beanName.equals(((BeanCreationException) ex).getBeanName())) {
 				throw (BeanCreationException) ex;
-			}
-			else {
+			} else {
 				throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Initialization of bean failed", ex);
 			}
 		}
 
+		// earlySingletonExposure：如果你的bean允许被早期暴露出去 也就是说可以被循环引用 那这里就会进行检查
+		// 此时一级缓存肯定还没数据，但是呢此时候二级缓存earlySingletonObjects也没数据
 		if (earlySingletonExposure) {
+			// 第二参数为false  表示不会去三级缓存(工厂缓存)查
 			Object earlySingletonReference = getSingleton(beanName, false);
 			if (earlySingletonReference != null) {
+
+				// 这个意思是如果经过了initializeBean()后，exposedObject还是木有变，那就可以大胆放心的返回了
+				// initializeBean会调用后置处理器，这个时候可以生成一个代理对象，那这个时候它哥俩就不会相等了 走else去判断吧
 				if (exposedObject == bean) {
 					exposedObject = earlySingletonReference;
 				}
+
+				// hasDependentBean：若它有依赖的bean 那就需要继续校验了~~~(若没有依赖的 就放过它~)
 				else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
+
 					String[] dependentBeans = getDependentBeans(beanName);
 					Set<String> actualDependentBeans = new LinkedHashSet<>(dependentBeans.length);
+
 					for (String dependentBean : dependentBeans) {
+						// removeSingletonIfCreatedForTypeCheckOnly:
+						// 判断该dependentBean并没有在创建中的情况下, 那就把它从所有缓存中移除,并且返回true;
+						// 否则（比如确实在创建中）那就返回false, 表示所谓的真正依赖（解释：就是真的需要依赖它先实例化，才能实例化自己的依赖）
 						if (!removeSingletonIfCreatedForTypeCheckOnly(dependentBean)) {
 							actualDependentBeans.add(dependentBean);
 						}
 					}
+
+					// 如果依赖的bean有在创建中的则抛异常
 					if (!actualDependentBeans.isEmpty()) {
 						throw new BeanCurrentlyInCreationException(beanName,
 								"Bean with name '" + beanName + "' has been injected into other beans [" +
