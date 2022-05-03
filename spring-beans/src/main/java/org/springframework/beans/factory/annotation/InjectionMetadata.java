@@ -112,8 +112,7 @@ public class InjectionMetadata {
 
 	public void inject(Object target, @Nullable String beanName, @Nullable PropertyValues pvs) throws Throwable {
 		Collection<InjectedElement> checkedElements = this.checkedElements;
-		Collection<InjectedElement> elementsToIterate =
-				(checkedElements != null ? checkedElements : this.injectedElements);
+		Collection<InjectedElement> elementsToIterate = (checkedElements != null ? checkedElements : this.injectedElements);
 		if (!elementsToIterate.isEmpty()) {
 			for (InjectedElement element : elementsToIterate) {
 				element.inject(target, beanName, pvs);
@@ -225,6 +224,7 @@ public class InjectionMetadata {
 			if (this.isField) {
 				Field field = (Field) this.member;
 				ReflectionUtils.makeAccessible(field);
+				// getResourceToInject(target, requestingBeanName) ：获取需要被注入的bean
 				field.set(target, getResourceToInject(target, requestingBeanName));
 			}
 			else {
@@ -293,6 +293,7 @@ public class InjectionMetadata {
 
 		/**
 		 * Either this or {@link #inject} needs to be overridden.
+		 * 获取需要被注入的bean
 		 */
 		@Nullable
 		protected Object getResourceToInject(Object target, @Nullable String requestingBeanName) {

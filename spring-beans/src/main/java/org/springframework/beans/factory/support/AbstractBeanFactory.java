@@ -256,8 +256,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		else {
 			// Fail if we're already creating this bean instance: We're assumably within a circular reference.
+			// 如果我们已经在创建这个 prototype bean 实例，则失败：我们可能在循环引用中。
 			if (isPrototypeCurrentlyInCreation(beanName)) {
-				// 若无法拿到提前暴露的bean的引用，则无法处理循环引用
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
@@ -298,7 +298,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName, "Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+
 						registerDependentBean(dep, beanName);
+
 						try {
 							getBean(dep);
 						} catch (NoSuchBeanDefinitionException ex) {

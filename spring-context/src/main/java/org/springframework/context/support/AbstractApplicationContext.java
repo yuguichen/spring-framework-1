@@ -126,7 +126,8 @@ import org.springframework.util.ReflectionUtils;
  * @see org.springframework.context.ApplicationListener
  * @see org.springframework.context.MessageSource
  */
-public abstract class AbstractApplicationContext extends DefaultResourceLoader
+public abstract class AbstractApplicationContext
+		extends DefaultResourceLoader
 		implements ConfigurableApplicationContext {
 
 	/**
@@ -513,44 +514,71 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		return this.applicationListeners;
 	}
 
+
+	/**
+	 * ① prepareRefresh()刷新前的预处理：
+	 * ② obtainFreshBeanFactory()：获取在容器初始化时创建的BeanFactory：
+	 * ③ prepareBeanFactory(beanFactory)：BeanFactory的预处理工作，向容器中添加一些组件：
+	 * ④ postProcessBeanFactory(beanFactory)：子类重写该方法，可以实现在BeanFactory创建并预处理完成以后做进一步的设置
+	 * ⑤ invokeBeanFactoryPostProcessors(beanFactory)：在BeanFactory标准初始化之后执行BeanFactoryPostProcessor的方法，即BeanFactory的后置处理器：
+	 * ⑥ registerBeanPostProcessors(beanFactory)：向容器中注册Bean的后置处理器BeanPostProcessor，它的主要作用是干预Spring初始化bean的流程，从而完成代理、自动注入、循环依赖等功能
+	 * ⑦ initMessageSource()：初始化MessageSource组件，主要用于做国际化功能，消息绑定与消息解析：
+	 * ⑧ initApplicationEventMulticaster()：初始化事件派发器，在注册监听器时会用到：
+	 * ⑨ onRefresh()：留给子容器、子类重写这个方法，在容器刷新的时候可以自定义逻辑
+	 * ⑩ registerListeners()：注册监听器：将容器中所有的ApplicationListener注册到事件派发器中，并派发之前步骤产生的事件：
+	 * ⑪ finishBeanFactoryInitialization(beanFactory)：初始化所有剩下的单实例bean，核心方法是preInstantiateSingletons()，会调用getBean()方法创建对象；
+	 * ⑫ finishRefresh()：发布BeanFactory容器刷新完成事件：
+	 */
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
 		synchronized (this.startupShutdownMonitor) {
 			// Prepare this context for refreshing.
+			// prepareRefresh()刷新前的预处理：
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
+			// 获取在容器初始化时创建的BeanFactory
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
+			// BeanFactory的预处理工作，向容器中添加一些组件
 			prepareBeanFactory(beanFactory);
 
 			try {
 				// Allows post-processing of the bean factory in context subclasses.
+				// 子类重写该方法，可以实现在BeanFactory创建并预处理完成以后做进一步的设置
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
+				// 在BeanFactory标准初始化之后执行BeanFactoryPostProcessor的方法，即BeanFactory的后置处理器
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				// Register bean processors that intercept bean creation.
+				// 向容器中注册Bean的后置处理器BeanPostProcessor，
+				// 它的主要作用是干预Spring初始化bean的流程，从而完成代理、自动注入、循环依赖等功能
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
+				// 初始化事件派发器，在注册监听器时会用到：
 				initApplicationEventMulticaster();
 
 				// Initialize other special beans in specific context subclasses.
+				// 留给子容器、子类重写这个方法，在容器刷新的时候可以自定义逻辑
 				onRefresh();
 
 				// Check for listener beans and register them.
+				// 注册监听器：将容器中所有的ApplicationListener注册到事件派发器中，并派发之前步骤产生的事件
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
+				// 初始化所有剩下的单实例bean，核心方法是preInstantiateSingletons()，会调用getBean()方法创建对象；
 				finishBeanFactoryInitialization(beanFactory);
 
 				// Last step: publish corresponding event.
+				// 发布BeanFactory容器刷新完成事件
 				finishRefresh();
 			}
 
@@ -857,6 +885,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Register a default embedded value resolver if no BeanFactoryPostProcessor
 		// (such as a PropertySourcesPlaceholderConfigurer bean) registered any before:
 		// at this point, primarily for resolution in annotation attribute values.
+		// 如果之前没有 BeanFactoryPostProcessor 注册，则注册一个默认的解析器,主要用于解析注解属性值。
 		if (!beanFactory.hasEmbeddedValueResolver()) {
 			beanFactory.addEmbeddedValueResolver(strVal -> getEnvironment().resolvePlaceholders(strVal));
 		}
@@ -871,9 +900,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.setTempClassLoader(null);
 
 		// Allow for caching all bean definition metadata, not expecting further changes.
+		// 允许缓存所有 bean 定义元数据，而不是期望进一步的变化
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
+		// 非懒加载、单例模式的 bean 的初始化
 		beanFactory.preInstantiateSingletons();
 	}
 
